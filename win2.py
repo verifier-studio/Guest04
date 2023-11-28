@@ -2,16 +2,14 @@ from ttkbootstrap import *
 from ttkbootstrap.toast import ToastNotification
 from tkinter import filedialog
 
-import subprocess
-import pyautogui
-
-import json
-import pyperclip
+from pystray import MenuItem as item
+from PIL import Image
+import subprocess, pyautogui, json, pyperclip, pystray, threading
 
 server_infos = []
 
-app = Window(themename="pulse", position=(700, 200))
-app.title('Guest04 v0.6.15 Turbo探索版')
+app = Window(themename="pulse", position=(700, 200), iconphoto='favicon.ico')
+app.title('Guest04 v1.4.14 Turbo社区版')
 # app.geometry('610x400')
 app.resizable(False, False)
 
@@ -41,9 +39,14 @@ local_port.grid(row=5, column=1, padx=5)
 remote_port.insert(0, 3306)
 local_port.insert(0, 6603)
 
+def crtl_term(root_pwd_val):
+    pyautogui.sleep(1)
+    # pyautogui.hotkey('win', 'up')
+    # pyperclip.copy(root_pwd_val)
+    # pyautogui.rightClick()
+    # pyautogui.press('enter')
 def crtl(root_pwd_val):
     pyautogui.sleep(1)
-    pyautogui.hotkey('win', 'up')
     pyperclip.copy(root_pwd_val)
     pyautogui.rightClick()
     pyautogui.press('enter')
@@ -59,9 +62,9 @@ def open_server():
 
     command = 'ssh root@' + server_addr_val + ' -p ' + server_port_val
     # command = 'ps'
-    tt = subprocess.Popen(["powershell", "-NoExit", "-Command", command], creationflags=subprocess.CREATE_NEW_CONSOLE)
+    tt = subprocess.Popen(["powershell", "-NoExit -WindowStyle Maximized", "-Command", command], creationflags=subprocess.CREATE_NEW_CONSOLE)
 
-    crtl(root_pwd_val)
+    crtl_term(root_pwd_val)
 Button(frm, text='打开终端', bootstyle=SUCCESS, command=open_server).grid(row=6, column=0, pady=10)
 
 def connect_server():
@@ -232,4 +235,17 @@ Button(frm, text='加载/切换', bootstyle=DARK, command=get_row).grid(row=15, 
 
 Label(frm, text='Power By 海超人与大洋游侠®工作室！', bootstyle=SECONDARY).grid(row=16, column=2)
 
+def quit_window(icon, item):
+   icon.stop()
+   app.destroy()
+def show_window(icon, item):
+    # icon.stop()
+    app.after(0, app.deiconify)
+def hide_window():
+   app.withdraw()
+
+tray = pystray.Icon("name", Image.open("favicon.ico"), "Guest04", (item('显示', show_window, default=True, visible=False), item('退出', quit_window)))
+threading.Thread(target=tray.run, daemon=True).start()
+
+app.protocol('WM_DELETE_WINDOW', hide_window)
 app.mainloop()
