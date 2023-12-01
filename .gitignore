@@ -5,3 +5,4 @@
 run*.py
 guest04.json
 *.spec
+*.log

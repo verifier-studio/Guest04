@@ -6,11 +6,26 @@ from pystray import MenuItem as item
 from PIL import Image
 import subprocess, pyautogui, json, pyperclip, pystray, threading
 
+import fabric
+
+import logging
+
 server_infos = []
+
+# def thread_it(func, *args):
+#     '''将函数打包进线程'''
+#     # 创建
+#     t = threading.Thread(target=func, args=args) 
+#     # 守护 !!!
+#     t.setDaemon(True) 
+#     # 启动
+#     t.start()
+#     # 阻塞--卡死界面！
+#     # t.join()
 
 app = Window(themename="pulse", position=(700, 200), iconphoto='favicon.ico')
 app.title('Guest04 v1.4.14 Turbo社区版')
-# app.geometry('610x400')
+# app.geometry('680x480')
 app.resizable(False, False)
 
 frm = Frame(app, padding=10)
@@ -27,6 +42,30 @@ server_port.grid(row=1, column=1, padx=5)
 Label(frm, text='ROOT密码').grid(row=2, column=0)
 root_pwd = Entry(frm)
 root_pwd.grid(row=3, column=0, padx=5)
+def just_test():
+    server_addr_val = server_addr.get()
+    server_port_val = server_port.get()
+    root_pwd_val = root_pwd.get()
+
+    if server_addr_val =='' or server_port_val == '' or root_pwd_val == '':
+        show_alert('前三空，填！')
+        return
+
+    logging.basicConfig(filename=f'./error.log', level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s", datefmt="%m/%d/%Y %H:%M:%S %p", encoding='utf-8')
+
+    try:
+        c = fabric.Connection(host=f'root@{server_addr_val}', port=server_port_val, connect_kwargs=dict(password=root_pwd_val), connect_timeout=1)
+        result = c.run('uname', hide=True)
+        logging.info(result)
+        if 'Linux' in result.stdout:
+            show_alert('连接成功！')
+        else:
+            show_alert('连接失败！')
+    except Exception as e:
+        logging.info(e)
+        show_alert('连接失败！')
+Label(frm, text='测试连接', bootstyle=SECONDARY).grid(row=2, column=1)
+Button(frm, text='快速验证服务器信息', bootstyle=SECONDARY, command=just_test).grid(row=3, column=1)
 
 Label(frm, text='转发远程').grid(row=4, column=0)
 remote_port = Entry(frm)
@@ -39,12 +78,6 @@ local_port.grid(row=5, column=1, padx=5)
 remote_port.insert(0, 3306)
 local_port.insert(0, 6603)
 
-def crtl_term(root_pwd_val):
-    pyautogui.sleep(1)
-    # pyautogui.hotkey('win', 'up')
-    # pyperclip.copy(root_pwd_val)
-    # pyautogui.rightClick()
-    # pyautogui.press('enter')
 def crtl(root_pwd_val):
     pyautogui.sleep(1)
     pyperclip.copy(root_pwd_val)
@@ -60,11 +93,10 @@ def open_server():
         show_alert('前三空，填！')
         return
 
-    command = 'ssh root@' + server_addr_val + ' -p ' + server_port_val
-    # command = 'ps'
-    tt = subprocess.Popen(["powershell", "-NoExit -WindowStyle Maximized", "-Command", command], creationflags=subprocess.CREATE_NEW_CONSOLE)
+    command = 'ssh root@' + server_addr_val + ' -p ' + server_port_val + ' -o StrictHostKeyChecking=no'
+    subprocess.Popen(["powershell", "-WindowStyle", 'Maximized', "-NoExit", "-Command", command], creationflags=subprocess.CREATE_NEW_CONSOLE)
 
-    crtl_term(root_pwd_val)
+    crtl(root_pwd_val)
 Button(frm, text='打开终端', bootstyle=SUCCESS, command=open_server).grid(row=6, column=0, pady=10)
 
 def connect_server():
@@ -78,8 +110,8 @@ def connect_server():
         show_alert('前五空，填！')
         return
 
-    command = 'ssh -N -L ' + local_port_val + ':localhost:' + remote_port_val + ' root@' + server_addr_val + ' -p ' + server_port_val
-    subprocess.Popen(["powershell", "-NoExit", "-Command", command], creationflags=subprocess.CREATE_NEW_CONSOLE)
+    command = 'ssh -N -L ' + local_port_val + ':localhost:' + remote_port_val + ' root@' + server_addr_val + ' -p ' + server_port_val + ' -o StrictHostKeyChecking=no'
+    subprocess.Popen(["powershell", "-WindowStyle", 'Maximized', "-NoExit", "-Command", command], creationflags=subprocess.CREATE_NEW_CONSOLE)
 
     crtl(root_pwd_val)
 Button(frm, text='建立通道', bootstyle=INFO, command=connect_server).grid(row=6, column=1, pady=10)
@@ -100,8 +132,8 @@ def upload_file():
     selectFile = filedialog.askopenfilename()
     print(selectFile)
     if selectFile != None and selectFile != "":
-        command = 'scp -P ' + server_port_val + ' ' + selectFile + ' root@' + server_addr_val + ':/root'
-        subprocess.Popen(["powershell", "-Command", command], creationflags=subprocess.CREATE_NEW_CONSOLE)
+        command = 'scp -P ' + server_port_val + ' -o StrictHostKeyChecking=no' + ' ' + selectFile + ' root@' + server_addr_val + ':/root'
+        subprocess.Popen(["powershell", "-WindowStyle", 'Maximized', "-Command", command], creationflags=subprocess.CREATE_NEW_CONSOLE)
 
         crtl(root_pwd_val)
 Button(upload, text='选择文件', bootstyle=LIGHT, command=upload_file).grid()
@@ -234,6 +266,8 @@ def get_row():
 Button(frm, text='加载/切换', bootstyle=DARK, command=get_row).grid(row=15, column=2)
 
 Label(frm, text='Power By 海超人与大洋游侠®工作室！', bootstyle=SECONDARY).grid(row=16, column=2)
+
+Separator(bootstyle=INFO).grid(row=17, column=0, columnspan=3)
 
 def quit_window(icon, item):
    icon.stop()

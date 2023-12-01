@@ -1,6 +1,6 @@
 - 打包
 ```
-pyinstaller -F -w win.py -n Guest04.exe
+pyinstaller -F -w win2.py -n Guest04.exe
 ```
 - 导出依赖
 
